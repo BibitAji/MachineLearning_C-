@@ -1,0 +1,116 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <cmath>
+#include <algorithm>
+
+using namespace std;
+
+// Struct untuk merepresentasikan data dengan fitur-fiturnya
+struct Data {
+    vector<double> features;
+};
+
+// Struct untuk merepresentasikan titik dengan koordinat x dan y
+struct Point {
+    double x, y;
+};
+
+// Menghitung jarak antara dua titik
+double distance(Point p1, Point p2) {
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+
+// Fungsi untuk membagi string berdasarkan delimiter dan menyimpan hasilnya ke dalam vektor
+vector<string> split(const string& str, char delimiter) {
+    vector<string> tokens;
+    stringstream ss(str);
+    string token;
+    while (getline(ss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+// Fungsi untuk membaca file CSV dan memuat datanya ke dalam vektor 2D
+vector<Data> readCSV(const string& filename) {
+    vector<Data> data;
+    ifstream file(filename);
+    if (file) {
+        string line;
+        while (getline(file, line)) {
+            vector<string> row_str = split(line, ',');
+            Data row;
+            for (const auto& str : row_str) {
+                row.features.push_back(stod(str));
+            }
+            data.push_back(row);
+        }
+        file.close();
+    } else {
+        cerr << "Unable to open file: " << filename << endl;
+    }
+    return data;
+}
+
+// Fungsi untuk menemukan K tetangga terdekat
+vector<Point> findNearestNeighbors(Point target, vector<Point>& points, int k) {
+    // Buat vektor untuk menyimpan jarak antara target dan semua titik
+    vector<pair<double, Point>> distances;
+
+    // Hitung jarak antara target dan setiap titik, lalu masukkan ke dalam vektor
+    for (const auto& point : points) {
+        double dist = distance(target, point);
+        distances.push_back({dist, point});
+    }
+
+    // Membuat fungsi lambda untuk membandingkan berdasarkan jarak
+    auto compare = [](const pair<double, Point>& a, const pair<double, Point>& b) {
+        return a.first < b.first;
+    };
+
+    // Urutkan vektor berdasarkan jarak
+    sort(distances.begin(), distances.end(), compare);
+
+    // Ambil K titik pertama sebagai tetangga terdekat
+    vector<Point> nearestNeighbors;
+    for (int i = 0; i < k; ++i) {
+        nearestNeighbors.push_back(distances[i].second);
+    }
+
+    return nearestNeighbors;
+}
+
+int main() {
+    // Nama file CSV yang akan dibaca
+    string filename = "data.csv";
+
+    // Membaca file CSV
+    vector<Data> data = readCSV(filename);
+
+    // Mengkonversi data CSV ke dalam format titik
+    vector<Point> points;
+    for (const auto& row : data) {
+        // Misalkan kita mengambil dua fitur pertama sebagai koordinat x dan y
+        points.push_back({row.features[0], row.features[1]});
+    }
+
+    // Titik target
+    Point target = {3.0, 4.0};
+
+    // Jumlah tetangga terdekat yang ingin dicari
+    int k = 3;
+
+    // Temukan K tetangga terdekat dari titik target
+    vector<Point> nearestNeighbors = findNearestNeighbors(target, points, k);
+
+    // Tampilkan hasil
+    cout << "K Nearest Neighbors dari titik (" << target.x << ", " << target.y << "):" << endl;
+    for (const auto& neighbor : nearestNeighbors) {
+        cout << "(" << neighbor.x << ", " << neighbor.y << ")" << endl;
+    }
+
+    return 0;
+}
